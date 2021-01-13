@@ -18,8 +18,10 @@ class chip8 {
 	private:
 		unsigned short opcode;
 		unsigned char memory[4096];
-		unsigned char V[16];
+		//registers (15 general purpose register, 1 for carry flag (Register 0xF))
+		unsigned char V[16];  
 		
+		//index (register) and program counter 
 		unsigned short I;
 		unsigned short pc;
 /*
