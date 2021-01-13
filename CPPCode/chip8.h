@@ -16,6 +16,24 @@ class chip8 {
 
 
 	private:
+		//opcodeX - X is the value of the left most nibble. Excecution of the 35 instructions.
+		void opcode0();
+		void opcode1(); 
+		void opcode2();
+		void opcode3();
+		void opcode4();
+		void opcode5();
+		void opcode6();
+		void opcode7();
+		void opcode8();
+		void opcode9();
+		void opcodeA();
+		void opcodeB();
+		void opcodeC();
+		void opcodeD();
+		void opcodeE();
+		void opcodeF();
+
 		unsigned short opcode;
 		unsigned char memory[4096];
 		//registers (15 general purpose register, 1 for carry flag (Register 0xF))
