@@ -115,10 +115,15 @@ void chip8::opcode0() {
 	switch (opcode)
 	{
 		case 0x00E0:
-			cout << "00E0" << endl;
+			cout << "00E0 clear screen" << endl;
+			//clear the screen 
 			break;
 		case 0x00EE:
-			cout << "0x00EE" << endl; 
+			cout << "0x00EE Return from subroutine" << endl; 
+			//return from subroutine
+			--sp;			// 16 levels of stack, decrease stack pointer to prevent overwrite
+			pc = stack[sp];	// Put the stored return address from the stack back into the program counter					
+			pc += 2;		// Don't forget to increase the program counter!
 			break;
 		default :
 				cout << "0x0NNN" << endl; 
@@ -127,10 +132,15 @@ void chip8::opcode0() {
 };
 void chip8::opcode1() {
 	//possible opcodes 1 - 1NNN
+	pc = opcode & 0x0FFF;
 	cout << "1NNN" << endl; 
+
 };
 void chip8::opcode2() {
-	//possible opcodes 1 - 2NNN
+	//possible opcodes 1 - 2NNN, subroutine at  adress NNN
+	stack[sp] = pc;
+	++sp;
+	pc = opcode & 0x0FFF;
 	cout << "2NNN" << endl; 
 };
 void chip8::opcode3() {
@@ -174,6 +184,12 @@ void chip8::opcode8() {
 			cout << "8XY3" << endl;
 			break;
 		case 0x0004:
+			if (V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8]))
+				V[0xF] = 1; //carry
+			else
+				V[0xF] = 0;
+			V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
+			pc += 2;
 			cout << "8XY4" << endl;
 			break; 
 		case 0x0005:
@@ -254,6 +270,10 @@ void chip8::opcodeF() {
 		cout << "FX29" << endl;
 		break;
 	case 0x0033:
+		memory[I] = V[(opcode & 0x0F00) >> 8] / 100;
+		memory[I + 1] = (V[(opcode & 0x0F00) >> 8] / 10) % 10;
+		memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10;
+		pc += 2;
 		cout << "FX33" << endl;
 		break;
 	case 0x0055:
