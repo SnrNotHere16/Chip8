@@ -145,22 +145,38 @@ void chip8::opcode2() {
 };
 void chip8::opcode3() {
 	//possible opcodes 1 - 3XNN 
+	if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF))
+		pc += 4;
+	else
+		pc += 2;
 	cout << "3XNN" << endl; 
 };
 void chip8::opcode4() {
 	//possible opcodes 4 - 4XNN 
+	if (V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF))
+		pc += 4;
+	else
+		pc += 2;
 	cout << "4XNN" << endl;
 };
 void chip8::opcode5() {
 	//possible opcodes 1 - 5XY0 
+	if (V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4])
+		pc += 4;
+	else
+		pc += 2;
 	cout << "5XY0" << endl;
 };
 void chip8::opcode6() {
 	//possible opcodes 1 - 6XNN 
+	V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF);
+	pc += 2;
 	cout << "6XNN" << endl;
 };
 void chip8::opcode7() {
 	//possible opcodes 1 - 7XNN
+	V[(opcode & 0x0F00) >> 8] += (opcode & 0x00FF);
+	pc += 2;
 	cout << "7XNN" << endl;
 };
 void chip8::opcode8() {
@@ -171,16 +187,24 @@ void chip8::opcode8() {
 	*/
 	switch (opcode & 0x000F)
 	{
-		case 0x0000: 
+		case 0x0000:
+			V[opcode & 0x0F00 >> 8] = V[opcode & 0x00F0 >> 4];
+			pc += 2; 
 			cout << "8XY0" << endl;
 			break;
 		case 0x0001:
+			V[(opcode & 0x0F00) >> 8] |= V[(opcode & 0x00F0) >> 4];
+			pc += 2;
 			cout << "8XY1" << endl;
 			break; 
 		case 0x0002:
+			V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
+			pc += 2;
 			cout << "8XY2" << endl;
 			break;
 		case 0x0003:
+			V[(opcode & 0x0F00) >> 8] ^= V[(opcode & 0x00F0) >> 4];
+			pc += 2;
 			cout << "8XY3" << endl;
 			break;
 		case 0x0004:
