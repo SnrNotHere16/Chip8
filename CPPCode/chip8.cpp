@@ -207,7 +207,7 @@ void chip8::opcode8() {
 			pc += 2;
 			cout << "8XY3" << endl;
 			break;
-		case 0x0004:
+		case 0x0004: // check
 			if (V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8]))
 				V[0xF] = 1; //carry
 			else
@@ -217,15 +217,33 @@ void chip8::opcode8() {
 			cout << "8XY4" << endl;
 			break; 
 		case 0x0005:
+			if (V[(opcode & 0x00F0) >> 4] > V[(opcode & 0x0F00) >> 8])
+				V[0xF] = 0; // there is a borrow
+			else
+				V[0xF] = 1;
+			V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
+			pc += 2;
 			cout << "8XY5" << endl;
 			break; 
 		case 0x0006:
+			V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1;
+			V[(opcode & 0x0F00) >> 8] >>= 1;
+			pc += 2;
 			cout << "8XY6" << endl;
 			break;
 		case 0x0007:
+			if (V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4])	// VY-VX
+				V[0xF] = 0; // there is a borrow
+			else
+				V[0xF] = 1;
+			V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8];
+			pc += 2;
 			cout << "8XY7" << endl;
 			break; 
 		case 0x000E:
+			V[0xF] = V[(opcode & 0x0F00) >> 8] >> 7;
+			V[(opcode & 0x0F00) >> 8] <<= 1;
+			pc += 2;
 			cout << "8XYE" << endl;
 			break; 
 		default : 
@@ -234,19 +252,28 @@ void chip8::opcode8() {
 };
 void chip8::opcode9() {
 	//possible opcodes 1 - 9XY0
+	if (V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4])
+		pc += 4;
+	else
+		pc += 2;
 	cout << "9XY0" << endl;
 
 };
 void chip8::opcodeA() {
 	//possible opcodes 1 - ANNN
+	I = opcode & 0x0FFF;
+	pc += 2;
 	cout << "ANNN" << endl;
 };
 void chip8::opcodeB() {
 	//possible opcodes 1 - BNNN 
+	pc = (opcode & 0x0FFF) + V[0];
 	cout << "BNNN" << endl;
 };
 void chip8::opcodeC() {
 	//possible opcodes 1 - CXNN 
+	V[(opcode & 0x0F00) >> 8] = (rand() % 0xFF) & (opcode & 0x00FF);
+	pc += 2;
 	cout << "CXNN" << endl;
 };
 void chip8::opcodeD() {
@@ -258,9 +285,17 @@ void chip8::opcodeE() {
 	switch (opcode & 0x00FF)
 	{
 		case 0x009E: 
+			if (key[V[(opcode & 0x0F00) >> 8]] != 0)
+				pc += 4;
+			else
+				pc += 2;
 			cout << "EX9E" << endl; 
 			break; 
 		case 0x00A1: 
+			if (key[V[(opcode & 0x0F00) >> 8]] == 0)
+				pc += 4;
+			else
+				pc += 2;
 			cout << "EXA1" << endl; 
 			break; 
 		default: 
@@ -276,21 +311,53 @@ void chip8::opcodeF() {
 	switch (opcode & 0x00FF)
 	{
 	case 0x007:
+		V[(opcode & 0x0F00) >> 8] = delay_timer;
+		pc += 2;
 		cout << "FX07" << endl;
 		break;
 	case 0x00A:
+		bool keyPress = false;
+
+		for (int i = 0; i < 16; ++i)
+		{
+			if (key[i] != 0)
+			{
+				V[(opcode & 0x0F00) >> 8] = i;
+				keyPress = true;
+			}
+		}
+
+		// If we didn't received a keypress, skip this cycle and try again.
+		if (!keyPress)
+			return;
+
+		pc += 2;
 		cout << "FX0A" << endl;
 		break;
 	case 0x0015:
+		delay_timer = V[(opcode & 0x0F00) >> 8];
+		pc += 2;
 		cout << "FX15" << endl;
 		break;
 	case 0x0018:
+		sound_timer = V[(opcode & 0x0F00) >> 8];
+		pc += 2;
 		cout << "FX18" << endl;
 		break;
 	case 0x001E:
+		if (I + V[(opcode & 0x0F00) >> 8] > 0xFFF)	// VF is set to 1 when range overflow (I+VX>0xFFF), and 0 when there isn't.
+			V[0xF] = 1;
+		else
+			V[0xF] = 0;
+		I += V[(opcode & 0x0F00) >> 8];
+		pc += 2;
 		cout << "FX1E" << endl;
 		break;
 	case 0x029:
+		memory[I] = V[(opcode & 0x0F00) >> 8] / 100;
+		memory[I + 1] = (V[(opcode & 0x0F00) >> 8] / 10) % 10;
+		memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10;
+		pc += 2;
 		cout << "FX29" << endl;
 		break;
 	case 0x0033:
@@ -301,9 +368,21 @@ void chip8::opcodeF() {
 		cout << "FX33" << endl;
 		break;
 	case 0x0055:
+		for (int i = 0; i <= ((opcode & 0x0F00) >> 8); ++i)
+			memory[I + i] = V[i];
+
+		// On the original interpreter, when the operation is done, I = I + X + 1.
+		I += ((opcode & 0x0F00) >> 8) + 1;
+		pc += 2;
 		cout << "FX55" << endl;
 		break;
 	case 0x0065:
+		for (int i = 0; i <= ((opcode & 0x0F00) >> 8); ++i)
+			V[i] = memory[I + i];
+
+		// On the original interpreter, when the operation is done, I = I + X + 1.
+		I += ((opcode & 0x0F00) >> 8) + 1;
+		pc += 2;
 		cout << "FX65" << endl;
 		break;
 	default:
